@@ -7,7 +7,7 @@ const cTable = require('console.table');
 const rl = readline.createInterface({
     input: createReadStream('lab1.txt'),
 });
-const stream = createWriteStream("lab1out.txt");
+const stream = createWriteStream('lab1out.txt');
 
 let matrix = []; // Текущая расширенная матрица
 let arMatrix = {}; // Все варианты матриц
