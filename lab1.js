@@ -1,12 +1,13 @@
 const readline = require('readline');
-const {createReadStream} = require('fs');
+const {createReadStream, createWriteStream} = require('fs');
 const Iter = require('es-iter');
 const Fraction = require('fraction.js');
-require('console.table');
+const cTable = require('console.table');
 
 const rl = readline.createInterface({
     input: createReadStream('lab1.txt'),
 });
+const stream = createWriteStream("lab1out.txt");
 
 let matrix = []; // Текущая расширенная матрица
 let arMatrix = {}; // Все варианты матриц
@@ -26,17 +27,28 @@ const fraction = a => {
     return new Fraction(a);
 };
 
-const output = matrix => {
+const getTable = (matrix, keys) => {
    let outMatrix = [];
+   let base = [];
+   let free = [];
    for (let i in matrix) {
        let row = {};
        for (let j in matrix[i].params) {
+           const key = `x${parseInt(j) + 1}`;
+           if (keys.indexOf(j) >= 0 && base.indexOf(key) < 0) {
+               base.push(key);
+           }
+           else if (keys.indexOf(j) < 0 && free.indexOf(key) < 0) {
+               free.push(key);
+           }
            row[`x${parseInt(j) + 1}`] = matrix[i].params[j].toFraction();
        }
-       row.equal = matrix[i].equal.toFraction();
+       row['='] = matrix[i].equal.toFraction();
        outMatrix.push(row);
    }
-   console.table(outMatrix);
+   base.sort();
+   free.sort();
+   return cTable.getTable(`${base.join(', ')} - базисные неизвестные`, `${free.join(', ')} - свободные неизвестные`, outMatrix);
 };
 
 const resolveStep = (row, col, addEnum = false) => {
@@ -132,8 +144,12 @@ rl
                 }
             }
         }
-        arMatrix = Object.values(arMatrix);
-        for (let mat of arMatrix) {
-            output(mat);
+        let keys = Object.keys(arMatrix);
+        let counter = 0;
+        keys.sort();
+        for (let i of keys) {
+            stream.write(`Матрица №${++counter}\n`);
+            stream.write(getTable(arMatrix[i], i.split('')));
         }
+        stream.end();
     });
