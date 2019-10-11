@@ -41,9 +41,9 @@ const getTable = (matrix, keys) => {
            else if (keys.indexOf(j) < 0 && free.indexOf(key) < 0) {
                free.push(key);
            }
-           row[`x${parseInt(j) + 1}`] = matrix[i].params[j].toFraction();
+           row[`x${parseInt(j) + 1}`] = fraction(matrix[i].params[j]).toFraction();
        }
-       row['='] = matrix[i].equal.toFraction();
+       row['='] = fraction(matrix[i].equal).toFraction();
        outMatrix.push(row);
    }
    base.sort();
