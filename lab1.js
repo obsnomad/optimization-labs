@@ -2,6 +2,7 @@ const readline = require('readline');
 const {createReadStream} = require('fs');
 const Iter = require('es-iter');
 const Fraction = require('fraction.js');
+require('console.table');
 
 const rl = readline.createInterface({
     input: createReadStream('lab1.txt'),
@@ -17,12 +18,25 @@ const arrayDiff = (a, b) => {
     });
 };
 
-const clone = (obj) => {
+const clone = obj => {
     return JSON.parse(JSON.stringify(obj));
 };
 
 const fraction = a => {
     return new Fraction(a);
+};
+
+const output = matrix => {
+   let outMatrix = [];
+   for (let i in matrix) {
+       let row = {};
+       for (let j in matrix[i].params) {
+           row[`x${parseInt(j) + 1}`] = matrix[i].params[j].toFraction();
+       }
+       row.equal = matrix[i].equal.toFraction();
+       outMatrix.push(row);
+   }
+   console.table(outMatrix);
 };
 
 const resolveStep = (row, col, addEnum = false) => {
@@ -120,6 +134,6 @@ rl
         }
         arMatrix = Object.values(arMatrix);
         for (let mat of arMatrix) {
-            //console.log(mat);
+            output(mat);
         }
     });

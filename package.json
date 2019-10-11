@@ -8,6 +8,7 @@
   "devDependencies": {
     "@types/jest": "^24.0.0",
     "@types/node": "^10.14.0",
+    "console.table": "^0.10.0",
     "jest": "~24.8.0",
     "prettier": "~1.17.0",
     "rimraf": "^2.6.3",
