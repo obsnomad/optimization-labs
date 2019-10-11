@@ -1,6 +1,7 @@
 const readline = require('readline');
 const {createReadStream} = require('fs');
 const Iter = require('es-iter');
+const Fraction = require('fraction.js');
 
 const rl = readline.createInterface({
     input: createReadStream('lab1.txt'),
@@ -20,44 +21,33 @@ const clone = (obj) => {
     return JSON.parse(JSON.stringify(obj));
 };
 
-const round = (num, precision) => {
-    const multi = Number('1e' + precision);
-    return Math.round(num * multi) / multi;
-};
-
-const roundMatrix = (matrix) => {
-    for (let row in matrix) {
-        for (let col in matrix[row].params) {
-            matrix[row].params[col] = round(matrix[row].params[col], 5);
-        }
-        matrix[row].equal = round(matrix[row].equal, 5);
-    }
-    return matrix;
+const fraction = a => {
+    return new Fraction(a);
 };
 
 const resolveStep = (row, col, addEnum = false) => {
-    const val = matrix[row].params[col];
+    const val = fraction(matrix[row].params[col]);
     // Если разрешающий элемент равен 0, переходим сразу на следующий шаг
-    if (val === 0) {
+    if (val.equals(0)) {
         return false;
     }
     // Если разрешающий элемент не равен единице, делим ведущую строку на него
-    if (val !== 1) {
+    if (!val.equals(1)) {
         for (let i in matrix[row].params) {
-            matrix[row].params[i] /= val;
+            matrix[row].params[i] = fraction(matrix[row].params[i]).div(val);
         }
-        matrix[row].equal /= val;
+        matrix[row].equal = fraction(matrix[row].equal).div(val);
     }
     // Получаем единичный столбец
     for (let i in matrix) {
         i = parseInt(i);
         // Обрабатываем все строки, кроме ведущей
         if (i !== row) {
-            const multi = 0 - matrix[i].params[col]; // Множитель
+            const multi = fraction(matrix[i].params[col]).neg(); // Множитель
             for (let j in matrix[i].params) {
-                matrix[i].params[j] += matrix[row].params[j] * multi;
+                matrix[i].params[j] = fraction(matrix[i].params[j]).add(fraction(matrix[row].params[j]).mul(multi));
             }
-            matrix[i].equal += matrix[row].equal * multi;
+            matrix[i].equal = fraction(matrix[i].equal).add(fraction(matrix[row].equal).mul(multi));
         }
     }
     if (addEnum) {
@@ -72,9 +62,9 @@ rl
         const [k, v] = line.split(' | ');
         matrix.push({
             params: k.split(' ').map(item => {
-                return parseInt(item);
+                return fraction(item);
             }),
-            equal: parseInt(v),
+            equal: fraction(v),
         });
     })
     .on('close', () => {
@@ -92,9 +82,9 @@ rl
         for (let i in matrix) {
             let isZero = true;
             for (let j in matrix[i].params) {
-                isZero = isZero && matrix[i].params[j] === 0;
+                isZero = isZero && matrix[i].params[j].equals(0);
             }
-            if (matrix[i].equal !== 0) {
+            if (!matrix[i].equal.equals(0)) {
                 if (isZero) {
                     console.error('Система несовместна');
                     return;
@@ -105,7 +95,7 @@ rl
                 matrix.splice(i, 1);
             }
         }
-        arMatrix[enumVar.join('')] = roundMatrix(matrix);
+        arMatrix[enumVar.join('')] = matrix;
         const baseMatrix = clone(matrix);
         // Генерируем все возможные варианты базисных неизвестных
         const iterator = Iter.range(len).permutations();
@@ -124,12 +114,12 @@ rl
                     resolved = resolved && resolveStep(enumVar.indexOf(oldSeq[i]), newSeq[i]);
                 }
                 if (resolved) {
-                    arMatrix[index] = roundMatrix(matrix);
+                    arMatrix[index] = matrix;
                 }
             }
         }
         arMatrix = Object.values(arMatrix);
         for (let mat of arMatrix) {
-            console.log(mat);
+            //console.log(mat);
         }
     });
