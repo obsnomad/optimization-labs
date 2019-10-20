@@ -10,9 +10,9 @@ const rl = readline.createInterface({
 const stream = createWriteStream('lab1out.txt');
 
 let matrix = []; // Текущая расширенная матрица
-let arMatrix = {}; // Все варианты матриц
-let enumVar = []; // Последовательность для первого набора базисных неизвестных
-
+let arResult = {}; // Все решения
+let enumVar = []; // Последовательность для первого набора базисных переменных
+let targetFunc = []; // Целевая функция
 const arrayDiff = (a, b) => {
     return a.filter(function (i) {
         return b.indexOf(i) < 0;
@@ -27,28 +27,46 @@ const fraction = a => {
     return new Fraction(a);
 };
 
-const getTable = (matrix, keys) => {
-   let outMatrix = [];
-   let base = [];
-   let free = [];
-   for (let i in matrix) {
-       let row = {};
-       for (let j in matrix[i].params) {
-           const key = `x${parseInt(j) + 1}`;
-           if (keys.indexOf(j) >= 0 && base.indexOf(key) < 0) {
-               base.push(key);
-           }
-           else if (keys.indexOf(j) < 0 && free.indexOf(key) < 0) {
-               free.push(key);
-           }
-           row[`x${parseInt(j) + 1}`] = fraction(matrix[i].params[j]).toFraction();
-       }
-       row['='] = fraction(matrix[i].equal).toFraction();
-       outMatrix.push(row);
-   }
-   base.sort();
-   free.sort();
-   return cTable.getTable(`${base.join(', ')} - базисные неизвестные`, `${free.join(', ')} - свободные неизвестные`, outMatrix);
+let optimum = {
+    index: null,
+    value: fraction(0),
+};
+
+const getTable = (index, counter) => {
+    const result = arResult[index];
+    const matrix = result.matrix;
+    const keys = result.base;
+    let outMatrix = [];
+    let base = [];
+    let free = [];
+    let res = [];
+    for (let i in matrix) {
+        let row = {};
+        for (let j in matrix[i].params) {
+            j = parseInt(j);
+            const key = `x${j + 1}`;
+            if (keys.indexOf(j) >= 0 && base.indexOf(key) < 0) {
+                base.push(key);
+            } else if (keys.indexOf(j) < 0 && free.indexOf(key) < 0) {
+                free.push(key);
+            }
+            row[`x${j + 1}`] = fraction(matrix[i].params[j]).toFraction();
+        }
+        row['='] = fraction(matrix[i].equal).toFraction();
+        outMatrix.push(row);
+    }
+    base.sort();
+    free.sort();
+    for (let i of result.result) {
+        res.push(fraction(i).toFraction());
+    }
+    return cTable.getTable(
+        `Матрица №${counter}\n\n`,
+        outMatrix,
+        `${base.join(', ')} - базисные переменные`, `${free.join(', ')} - свободные переменные\n`,
+        `Решение: (${res.join('; ')}) - ${!result.isReference ? 'не ' : ''}опорное${index === optimum.index ? ', ОПТИМАЛЬНОЕ' : ''}`,
+        `Значение z: ${result.target.toFraction()}\n\n`,
+    );
 };
 
 const resolveStep = (row, col, addEnum = false) => {
@@ -82,19 +100,52 @@ const resolveStep = (row, col, addEnum = false) => {
     return true;
 };
 
+const resolveMatrix = (matrix, base, matrixIndex) => {
+    let result = [];
+    let isReference = true;
+    let target = fraction(0);
+    for (let i = 0; i < matrix[0].params.length; i++) {
+        i = parseInt(i);
+        let index = base.indexOf(i);
+        let res = index >= 0 ? matrix[index].equal : 0;
+        isReference = isReference && res >= 0;
+        result.push(res);
+        target = target.add(fraction(res));
+    }
+    if (isReference && target.compare(optimum.value) > 0) {
+        optimum.index = matrixIndex;
+        optimum.value = target;
+    }
+    return {
+        result,
+        isReference,
+        target,
+    };
+};
+
 rl
     .on('line', line => {
         // Получаем расширенную матрицу из файла построчно
-        const [k, v] = line.split(' | ');
-        matrix.push({
-            params: k.split(' ').map(item => {
-                return fraction(item);
-            }),
-            equal: fraction(v),
-        });
+        if (line.substr(0, 1) === 't') {
+            // С символа 't' начинается целевая функция
+            line.split(' ').map(item => {
+                if(item !== 't') {
+                    targetFunc.push(parseInt(item));
+                }
+            });
+        }
+        else {
+            const [k, v] = line.split(' | ');
+            matrix.push({
+                params: k.split(' ').map(item => {
+                    return fraction(item);
+                }),
+                equal: fraction(v),
+            });
+        }
     })
     .on('close', () => {
-        // Приводим матрицу к первому базисному виду (перебираем неизвестные по очереди)
+        // Приводим матрицу к первому базисному виду (перебираем переменные по очереди)
         let rowCount = 0; // Счетчик строк
         let columnCount = 0; // Счетчик столбцов
         const len = matrix[0].params.length;
@@ -121,9 +172,14 @@ rl
                 matrix.splice(i, 1);
             }
         }
-        arMatrix[enumVar.join('')] = matrix;
+        let index = enumVar.join('');
+        arResult[index] = {
+            matrix,
+            base: enumVar,
+            ...resolveMatrix(matrix, enumVar, index),
+        };
         const baseMatrix = clone(matrix);
-        // Генерируем все возможные варианты базисных неизвестных
+        // Генерируем все возможные варианты базисных переменных
         const iterator = Iter.range(len).permutations();
         const matrixLen = matrix.length;
         for (let seq of iterator) {
@@ -131,25 +187,28 @@ rl
             let baseSeq = seq.splice(0, matrixLen);
             baseSeq.sort();
             const index = baseSeq.join('');
-            if (arMatrix[index] === undefined) {
-                let oldSeq = arrayDiff(enumVar, baseSeq); // Индексы неизвестных, которые станут свободными
-                let newSeq = arrayDiff(baseSeq, enumVar); // Индексы неизвестных, которые станут базисными
+            if (arResult[index] === undefined) {
+                let oldSeq = arrayDiff(enumVar, baseSeq); // Индексы переменных, которые станут свободными
+                let newSeq = arrayDiff(baseSeq, enumVar); // Индексы переменных, которые станут базисными
                 matrix = clone(baseMatrix);
                 let resolved = true;
                 for (let i in oldSeq) {
                     resolved = resolved && resolveStep(enumVar.indexOf(oldSeq[i]), newSeq[i]);
                 }
                 if (resolved) {
-                    arMatrix[index] = matrix;
+                    arResult[index] = {
+                        matrix,
+                        base: baseSeq,
+                        ...resolveMatrix(matrix, baseSeq, index),
+                    };
                 }
             }
         }
-        let keys = Object.keys(arMatrix);
+        let keys = Object.keys(arResult);
         let counter = 0;
         keys.sort();
         for (let i of keys) {
-            stream.write(`Матрица №${++counter}\n`);
-            stream.write(getTable(arMatrix[i], i.split('')));
+            stream.write(getTable(i, ++counter));
         }
         stream.end();
     });
