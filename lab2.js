@@ -34,12 +34,14 @@ const getTable = (row, col) => {
         headers.push(`${i === col ? '↓' : ''}x${i + 1}`);
     }
     for (let i in matrix) {
+        i = parseInt(i);
         let item = [
-            `${parseInt(i) === row ? '←' : ''}x${parseInt(base[i]) + 1}`,
+            `${i === row ? '←' : ''}x${parseInt(base[i]) + 1}`,
             matrix[i].equal.toFraction(),
         ];
-        for (let j of matrix[i].params) {
-            item.push(j.toFraction());
+        for (let j in matrix[i].params) {
+            const value = matrix[i].params[j].toFraction();
+            item.push(i === row && parseInt(j) === col ? `[${value}]` : value);
         }
         data.push(item);
     }
