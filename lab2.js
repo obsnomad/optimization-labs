@@ -34,9 +34,8 @@ const getTable = (row, col) => {
         headers.push(`${i === col ? '↓' : ''}x${i + 1}`);
     }
     for (let i in matrix) {
-        let index = parseInt(base[i]);
         let item = [
-            `${index === row ? '←' : ''}x${index + 1}`,
+            `${parseInt(i) === row ? '←' : ''}x${parseInt(base[i]) + 1}`,
             matrix[i].equal.toFraction(),
         ];
         for (let j of matrix[i].params) {
