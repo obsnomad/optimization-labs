@@ -110,7 +110,7 @@ const resolveMatrix = (matrix, base, matrixIndex) => {
         let res = index >= 0 ? matrix[index].equal : 0;
         isReference = isReference && res >= 0;
         result.push(res);
-        target = target.add(fraction(res));
+        target = target.add(fraction(res).mul(targetFunc[i]));
     }
     if (isReference && target.compare(optimum.value) > 0) {
         optimum.index = matrixIndex;
@@ -129,12 +129,11 @@ rl
         if (line.substr(0, 1) === 't') {
             // С символа 't' начинается целевая функция
             line.split(' ').map(item => {
-                if(item !== 't') {
-                    targetFunc.push(parseInt(item));
+                if (item !== 't') {
+                    targetFunc.push(fraction(item));
                 }
             });
-        }
-        else {
+        } else {
             const [k, v] = line.split(' | ');
             matrix.push({
                 params: k.split(' ').map(item => {
