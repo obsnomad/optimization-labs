@@ -61,7 +61,7 @@ const getTable = (index, counter) => {
         res.push(fraction(i).toFraction());
     }
     return cTable.getTable(
-        `Матрица №${counter}\n\n`,
+        `Матрица №${counter}\n`,
         outMatrix,
         `${base.join(', ')} - базисные переменные`, `${free.join(', ')} - свободные переменные\n`,
         `Решение: (${res.join('; ')}) - ${!result.isReference ? 'не ' : ''}опорное${index === optimum.index ? ', ОПТИМАЛЬНОЕ' : ''}`,

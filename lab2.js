@@ -1,6 +1,5 @@
 const readline = require('readline');
 const {createReadStream, createWriteStream} = require('fs');
-const Iter = require('es-iter');
 const Fraction = require('fraction.js');
 const cTable = require('console.table');
 
@@ -10,8 +9,7 @@ const rl = readline.createInterface({
 const stream = createWriteStream('lab2out.txt');
 
 let matrix = []; // Текущая расширенная матрица
-let arResult = {}; // Все решения
-let targetFunc = []; // Целевая функция
+let targetFunc = {}; // Целевая функция
 let base = [];
 
 const fraction = a => {
@@ -148,7 +146,7 @@ rl
             let row;
             for (let i in matrix) {
                 const value = matrix[i].params[col];
-                values.push(value.compare(0) < 0 ? null : matrix[i].equal.div(value));
+                values.push(value.compare(0) <= 0 ? null : matrix[i].equal.div(value));
             }
             const cleanValues = values.filter(item => item !== null);
             if (cleanValues.length === 0) {
