@@ -229,6 +229,8 @@ rl
         while (findNegative() >= 0) {
             resolveStep();
         }
+        stream.write(getTable());
+        stream.write('\n');
         // Переходим к исходной задаче
         funcIndex = 'z';
         for (let i in matrix) {
