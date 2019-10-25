@@ -154,6 +154,10 @@ rl
             }
             targetFunc = {
                 params: k.split(' ').filter(item => item !== 't').map(item => {
+                    const abs = fraction(item).abs();
+                    if (mValue.compare(abs) < 0) {
+                        mValue = abs;
+                    }
                     return fraction(item).neg();
                 }),
                 equal: fraction(v),
