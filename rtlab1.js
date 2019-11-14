@@ -2,14 +2,16 @@ const {readFileSync, createWriteStream} = require('fs');
 const cTable = require('console.table');
 const moment = require('moment');
 
-const input = readFileSync('ab140100.10n').toString().split('\n');
-const control = readFileSync('igr15650.sp3').toString().split('\n');
+// ftp://data-out.unavco.org/pub/rinex/nav/2019/047/abmf0470.19n.Z
+const input = readFileSync('abmf0470.19n').toString().split('\n');
+// ftp://cddis.gsfc.nasa.gov/gnss/products/2040/emr20406.sp3.Z
+const control = readFileSync('emr20406.sp3').toString().split('\n');
 const stream = createWriteStream('rtlab1out.txt');
 
 const m = 3.986005e14;
 const omegaZ = 7.2921151467e-5;
 
-const Tpc = new Date(Date.UTC(2010, 0, 3));
+const Tpc = new Date(Date.UTC(2019, 1, 16, 0, 0, 0));
 
 const parseNumbers = str => {
     return str.match(/(-?\d\.\d+D[+\-]\d{2})|(^\d+)|((?<= )\d+(?= ))|((?<= )-?\d+\.\d+)/g).map(num => {
@@ -244,15 +246,18 @@ for (let i = 22; i < control.length; i++) {
                     dataControl[sat] = {};
                 }
                 let [x, y, z] = parseNumbers(control[i].substr(4));
-                dataControl[sat][curDate.getTime() / 1000] = {
-                    date: moment(curDate).utc().format('DD.MM.YYYY HH:mm:ss'),
-                    x,
-                    y,
-                    z,
-                    dx: data[sat].XSVK / 1000 - x,
-                    dy: data[sat].YSVK / 1000 - y,
-                    dz: data[sat].ZSVK / 1000 - z,
-                };
+                // Убрать условие, если нужно выгрузить таблицы для всех значений времени
+                if (curDate.getTime() === Tpc.getTime()) {
+                    dataControl[sat][curDate.getTime() / 1000] = {
+                        date: moment(curDate).utc().format('DD.MM.YYYY HH:mm:ss'),
+                        x,
+                        y,
+                        z,
+                        dx: data[sat].XSVK / 1000 - x,
+                        dy: data[sat].YSVK / 1000 - y,
+                        dz: data[sat].ZSVK / 1000 - z,
+                    };
+                }
             }
         }
     }
