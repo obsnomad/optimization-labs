@@ -30,15 +30,17 @@ let targetFunc = {
 };
 let matrix = [];
 for (let i = 2; i < input.length; i++) {
-    const [k, v] = input[i].split(' | ');
-    updateMValue(v);
-    matrix.push({
-        params: k.split(' ').map(item => {
-            updateMValue(item);
-            return fraction(item);
-        }),
-        equal: fraction(v),
-    });
+    if (input[i].length > 0) {
+        const [k, v] = input[i].split(' | ');
+        updateMValue(v);
+        matrix.push({
+            params: k.split(' ').map(item => {
+                updateMValue(item);
+                return fraction(item);
+            }),
+            equal: fraction(v),
+        });
+    }
 }
 
 const divideRow = (row, divider) => {
@@ -163,6 +165,7 @@ let uIndex = y0Index + 1; // Индекс переменной u
 for (let i = cols; i < y0Index; i++) {
     base.push(i);
 }
+base.push(uIndex);
 for (let i in matrix) {
     for (let j in matrix) {
         matrix[i].params.push(fraction(i === j ? 1 : 0)); // Добавление базисных переменных в матрицу
@@ -191,9 +194,19 @@ while (findNegative() >= 0) {
 }
 stream.write(getTable());
 stream.write('\n');
-// Переходим к исходной задаче
-funcIndex = 'z';
-for (let i in matrix) {
-    matrix[i].params.splice(-base.length);
+
+stream.write(`zmax = zM = ${targetFunc.equal.toFraction()}\n`);
+
+// Заполнение значений переменных исходной системы ограничений
+const y0BaseIndex = base.indexOf(y0Index);
+if(y0BaseIndex < 0) {
+    stream.write('y0 не является свободным членом\n');
+    return;
 }
-stream.write(getTable());
+const y0 = matrix[y0BaseIndex].equal;
+let tValues = (new Array(cols)).fill(fraction(0));
+for (let i = 0; i < cols; i++) {
+    const index = base.indexOf(i);
+    tValues[i] = index < 0 ? 0 : matrix[index].equal.div(y0).toFraction();
+}
+stream.write(`tmax: (${tValues.join('; ')})\n`);
