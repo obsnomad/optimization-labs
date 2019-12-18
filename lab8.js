@@ -85,7 +85,7 @@ const getTable = (row, col) => {
         data.push(item);
     }
     let item = [
-        funcIndex,
+        'zM',
         fraction(targetFunc.equal).toFraction(),
     ];
     for (let j of targetFunc.new) {
@@ -156,7 +156,6 @@ const findNegative = () => {
 };
 
 mValue = mValue.mul(10); // Увеличиваем порядок M
-mValue = fraction(200);
 let cols = matrix[0].params.length; // Количество переменных в исходной системе ограничений
 let colsBase = matrix.length; // Количество добавленных базисных переменных для уравнивания системы ограничений
 let base = []; // Индексы базовых переменных
@@ -188,7 +187,6 @@ for (let i in targetFunc.new) {
 }
 matrix[colsBase].params[uIndex] = 1;
 
-funcIndex = 'zM';
 while (findNegative() >= 0) {
     resolveStep();
 }
