@@ -6,6 +6,10 @@
     "node": ">= 10.13 <11"
   },
   "devDependencies": {
+    "@babel/cli": "^7.7.7",
+    "@babel/core": "^7.7.7",
+    "@babel/node": "^7.7.7",
+    "@babel/preset-env": "^7.7.7",
     "@types/jest": "^24.0.0",
     "@types/node": "^10.14.0",
     "console.table": "^0.10.0",
@@ -32,7 +36,18 @@
   "dependencies": {
     "es-iter": "^1.1.1",
     "fraction.js": "^4.0.12",
+    "mathjs": "^6.2.5",
     "moment": "^2.24.0",
     "tslib": "~1.9.3"
-  }
+  },
+  "main": "config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obsnomad/optimization-labs.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/obsnomad/optimization-labs/issues"
+  },
+  "homepage": "https://github.com/obsnomad/optimization-labs#readme"
 }

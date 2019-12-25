@@ -18,15 +18,21 @@ const updateMValue = val => {
 
 let mValue = fraction(0); // Значение M
 
+let numerator = input[0].split(' ').map(item => {
+    updateMValue(item);
+    return fraction(item);
+});
+let denominator = input[1].split(' ').map(item => {
+    updateMValue(item);
+    return fraction(item);
+});
+let numeratorFree = numerator.pop();
+let denominatorFree = denominator.pop();
 let targetFunc = {
-    numerator: input[0].split(' ').map(item => {
-        updateMValue(item);
-        return fraction(item);
-    }),
-    denominator: input[1].split(' ').map(item => {
-        updateMValue(item);
-        return fraction(item);
-    }),
+    numerator,
+    numeratorFree,
+    denominator,
+    denominatorFree,
 };
 let matrix = [];
 for (let i = 2; i < input.length; i++) {
@@ -175,17 +181,21 @@ for (let i in matrix) {
 }
 // Вводим дополнительную строку в систему ограничений
 const newTargetValues = (new Array(colsBase + 2)).fill(fraction(0));
+const newRowValues = [...targetFunc.denominator, ...newTargetValues];
+newRowValues[y0Index] = targetFunc.denominatorFree;
+newRowValues[uIndex] = fraction(1);
 matrix.push({
-    params: [...targetFunc.denominator, ...newTargetValues],
+    params: newRowValues,
     equal: fraction(1),
 });
 // Получаем новую целевую функцию по методу больших штрафов
 targetFunc.new = [...targetFunc.numerator, ...newTargetValues];
+targetFunc.new[y0Index] = targetFunc.numeratorFree;
+targetFunc.new[uIndex] = mValue.neg();
 targetFunc.equal = mValue.neg();
 for (let i in targetFunc.new) {
     targetFunc.new[i] = targetFunc.new[i].neg().sub(matrix[colsBase].params[i].mul(mValue));
 }
-matrix[colsBase].params[uIndex] = 1;
 
 while (findNegative() >= 0) {
     resolveStep();
