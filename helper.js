@@ -16,3 +16,7 @@ export const parseDate = (numbers, shortYear = true) => {
         (numbers[5] - seconds) * 1000
     ));
 };
+
+export const getCoord = (i, v, vc) => {
+    return 0.1 * (v[i] - v[`d${i}`] - vc[i] - vc[`d${i}`]);
+};

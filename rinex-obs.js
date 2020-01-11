@@ -4,6 +4,7 @@ import {parseDate, parseNumbers} from './helper';
 
 export default {
     obsData: [],
+    obsDataCompare: [],
 
     header: {
         startRow: null,
@@ -12,39 +13,57 @@ export default {
         rowsAmount: null,
         params: [],
     },
+    headerCompare: {
+        startRow: null,
+        position: [],
+        paramsAmount: null,
+        rowsAmount: null,
+        params: [],
+    },
 
     data: {},
+    dataCompare: {},
 
     init() {
         this.obsData = readFileSync(config.obs).toString().split('\n');
-        this.parseHeader();
+        this.parseHeader(this.obsData);
         this.parseData();
     },
 
-    parseHeader() {
+    initCompare() {
+        this.obsData = readFileSync(config.obs1).toString().split('\n');
+        this.obsDataCompare = readFileSync(config.obs2).toString().split('\n');
+        this.parseHeader();
+        this.parseHeader(true);
+        this.parseCompareData();
+    },
+
+    parseHeader(compare = false) {
         let row = 0;
-        while (this.obsData[row].indexOf('END OF HEADER') < 0) {
-            const line = this.obsData[row];
+        let header = compare ? this.header : this.headerCompare;
+        let obsData = compare ? this.obsData : this.obsDataCompare;
+        while (obsData[row].indexOf('END OF HEADER') < 0) {
+            const line = obsData[row];
             const value = line.substr(0, 60);
             const name = line.substr(60).trim();
             switch (name) {
                 case 'APPROX POSITION XYZ':
-                    this.header.position = parseNumbers(value);
+                    header.position = parseNumbers(value);
                     break;
                 case '# / TYPES OF OBSERV':
-                    if (this.header.paramsAmount === null) {
+                    if (header.paramsAmount === null) {
                         const match = value.match(/\d+/);
                         if (Array.isArray(match)) {
-                            this.header.paramsAmount = parseInt(match[0]);
-                            this.header.rowsAmount = Math.ceil(this.header.paramsAmount / 5);
+                            header.paramsAmount = parseInt(match[0]);
+                            header.rowsAmount = Math.ceil(header.paramsAmount / 5);
                         }
                     }
-                    this.header.params = [...this.header.params, ...value.match(/\w\d/g)];
+                    header.params = [...header.params, ...value.match(/\w\d/g)];
                     break;
             }
             row++;
         }
-        this.header.startRow = ++row;
+        header.startRow = ++row;
     },
 
     parseData() {
@@ -58,7 +77,7 @@ export default {
                 continue;
             }
             // Поиск спутников в строке
-            let sat = line.match(/((G|R|S)\d{2})/g);
+            let sat = line.match(/((G|R|S|E)\d{2})/g);
             if (sat) {
                 // Если уже заносились данные, значит это новый блок
                 if (block.dataReceived) {
@@ -109,5 +128,41 @@ export default {
                 }
             }
         }
+    },
+
+    parseCompareData() {
+        this.data = this.parseDataD(this.header, this.obsData);
+        this.dataCompare = this.parseDataD(this.headerCompare, this.obsDataCompare);
+    },
+
+    parseDataD(header, obsData) {
+        const date = parseDate(parseNumbers(obsData[header.startRow].substr(1, 25)));
+        const time = date.getUTCHours() * 3600 + date.getUTCMinutes() * 60 + date.getUTCSeconds();
+        const sat = obsData[header.startRow].match(/((G|R|S|E)\d{2})/g);
+        let block = {
+            date,
+            time,
+            timeMod: time + 86400,
+            sat: [],
+            satNum: [],
+        };
+        sat.forEach((item, index) => {
+            const line = obsData[index + header.startRow + 2].split(' ');
+            let satData = {
+                type: item.substr(0, 1),
+                num: parseInt(item.substr(1)),
+                data: [],
+            };
+            if (satData.type === 'G') {
+                for (let i in header.params) {
+                    satData.data[header.params[i]] = line[i].substr(0, 2) === '3&'
+                        ? parseInt(line[i].substr(2)) / 1000
+                        : null;
+                }
+                block.sat.push(satData);
+                block.satNum.push(satData.num);
+            }
+        });
+        return block;
     },
 }

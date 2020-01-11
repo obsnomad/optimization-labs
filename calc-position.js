@@ -1,4 +1,5 @@
 import {cos, inv, multiply, norm, pow, sin, sqrt, transpose} from 'mathjs';
+import {getCoord} from './helper';
 
 export default {
     c: 299792458,
@@ -8,7 +9,21 @@ export default {
     eps: 1e-6,
 
     calc(nav, obs) {
-        obs.data.sat.forEach(sat => {
+        return this.getValues(nav, obs.data, obs.header);
+    },
+
+    calcCompare(nav, obs) {
+        const values = this.getValues(nav, obs.data, obs.header);
+        const valuesCompare = this.getValues(nav, obs.dataCompare, obs.headerCompare);
+        return({
+            dx: getCoord('x', values, valuesCompare),
+            dy: getCoord('y', values, valuesCompare),
+            dz: getCoord('z', values, valuesCompare),
+        });
+    },
+
+    getValues(nav, obsData, obsHeader) {
+        obsData.sat.forEach(sat => {
             const navIndex = `PG${('' + sat.num).padStart(2, '0')}`;
             if (sat.data.C1 !== undefined && nav.data[navIndex] !== undefined) {
                 const {
@@ -25,7 +40,7 @@ export default {
                     Toc,
                 } = nav.data[navIndex];
                 let Sest = sat.data.C1;
-                const time = obs.data.time - Sest / this.c;
+                const time = obsData.time - Sest / this.c;
                 const tK = time - (Toc.getUTCHours() * 3600 + Toc.getUTCMinutes() * 60 + Toc.getUTCSeconds());
                 const deltaTR = this.CR * e0 * sqrtA * Math.sin(EK);
                 const deltaT = DeltaS + tK * (VS + tK * aS) - TGD + deltaTR;
@@ -52,7 +67,7 @@ export default {
             console.log('Недостаточно спутников');
             return;
         }
-        let X = [...obs.header.position, 0];
+        let X = [...obsHeader.position, 0];
         let r = Array(length);
         let j = Array(length);
         let dSest = Array(length);
@@ -83,9 +98,9 @@ export default {
             x: X[0],
             y: X[1],
             z: X[2],
-            dx: X[0] - obs.header.position[0],
-            dy: X[1] - obs.header.position[1],
-            dz: X[2] - obs.header.position[2],
+            dx: X[0] - obsHeader.position[0],
+            dy: X[1] - obsHeader.position[1],
+            dz: X[2] - obsHeader.position[2],
         }
-    }
+    },
 }
