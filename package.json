@@ -9,7 +9,7 @@
     "console.table": "^0.10.0",
     "es-iter": "^1.1.2",
     "fraction.js": "^4.1.3",
-    "mathjs": "^10.1.1",
+    "mathjs": "^15.2.0",
     "moment": "^2.29.1",
     "tslib": "^2.3.1"
   },
